@@ -10,17 +10,17 @@ Move::Move(Position src, Position dest, Move::Type type, std::weak_ptr<Piece> pi
 
 Position Move::get_src_position() const
 {
-	return this->m_src_position;
+    return this->m_src_position;
 }
 
 Position Move::get_dest_position() const
 {
-	return this->m_dest_position;
+    return this->m_dest_position;
 }
 
 Move::Type Move::get_type() const
 {
-	return this->m_type;
+    return this->m_type;
 }
 
 std::shared_ptr<Piece> Move::get_piece_moved() const

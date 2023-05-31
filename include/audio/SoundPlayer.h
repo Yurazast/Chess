@@ -14,9 +14,9 @@ class SoundPlayer
 {
 public:
     static sf::SoundBuffer LoadFromFile(const std::string& filepath);
-	static void Play(ISXChess::SoundType sound_type);
-	static void Pause();
-	static void Stop();
+    static void Play(ISXChess::SoundType sound_type);
+    static void Pause();
+    static void Stop();
 
 private:
     static sf::Sound s_sound;

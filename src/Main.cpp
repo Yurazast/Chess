@@ -12,5 +12,5 @@ int main()
     Game game(window);
     game.Run();
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

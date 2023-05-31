@@ -48,13 +48,12 @@ bool FENParser::IsFENValid(const std::string& fen)
 	try
 	{
 		FENParser(fen).Parse();
+		return true;
 	}
-	catch (...)
+	catch (const std::runtime_error& e)
 	{
 		return false;
 	}
-
-	return true;
 }
 
 void FENParser::ParseChessBoard(const std::string& fen_position)
@@ -178,7 +177,7 @@ void FENParser::ParseEnPassant(const std::string& fen_en_passant)
 
 void FENParser::ParseCounters(const std::string& fen_halfmove, const std::string& fen_fullmove)
 {
-	char* halfmove_ptr, *fullmove_ptr;
+	char *halfmove_ptr, *fullmove_ptr;
 	m_fen_info.halfmove_clock = std::strtol(fen_halfmove.c_str(), &halfmove_ptr, 10);
 	m_fen_info.fullmove_counter = std::strtol(fen_fullmove.c_str(), &fullmove_ptr, 10);
 

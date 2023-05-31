@@ -25,7 +25,7 @@ public:
 
 	std::shared_ptr<Piece> GetPiece(Position position) const;
 	std::shared_ptr<King> GetKing(ISXChess::Team team) const;
-    Position FindKingPosition(ISXChess::Team team) const;
+	Position FindKingPosition(ISXChess::Team team) const;
 	std::list<std::pair<std::shared_ptr<Piece>, Position>> GetPiecesPositions(ISXChess::Team team) const;
 
 	const ISXChess::ChessBoard& get_chess_board() const;

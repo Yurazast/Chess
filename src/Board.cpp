@@ -111,7 +111,7 @@ Position Board::FindKingPosition(ISXChess::Team team) const
 		for (int8_t x = 0; x < BOARD_WIDTH; ++x)
 		{
 			const std::shared_ptr<Piece> piece = GetPiece({ x, y });
-			if (piece != nullptr &&	piece->get_team() == team && piece->get_type() == Piece::Type::KING)
+			if (piece != nullptr && piece->get_team() == team && piece->get_type() == Piece::Type::KING)
 			{
 				return { x, y };
 			}
@@ -178,7 +178,7 @@ void Board::InitPieces(ISXChess::Team team)
 		piece->get_sprite().setPosition(square.getPosition());
 		piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
 	}
-	
+
 	for (uint8_t x = 0; x < BOARD_WIDTH; ++x)
 	{
 		m_chess_board.at(start_y + shift).at(x).piece = PieceFactory::Create(Piece::Type::PAWN, team);

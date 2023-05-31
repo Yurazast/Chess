@@ -29,7 +29,7 @@ public:
 	Game(sf::RenderWindow& window, PlayerArray players = std::array<std::shared_ptr<Player>, PLAYER_COUNT>{ std::make_shared<Player>(ISXChess::Team::WHITE), std::make_shared<Player>(ISXChess::Team::BLACK) });
 
 	void Init(const std::string& fen = "");
-    void Run();
+	void Run();
 	void Reset(const PlayerArray* const players = nullptr);
 
 	void SwitchTurn();

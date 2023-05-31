@@ -57,12 +57,18 @@ void Game::Init(const std::string& fen)
 
 		this->m_halfmove_clock = fen_info.halfmove_clock;
 		this->m_fullmove_counter = fen_info.fullmove_counter;
+
+		if (IsInCheck())
+		{
+			const Position king_position = m_board.FindKingPosition(fen_info.current_turn);
+			m_board.get_chess_board().at(king_position.y).at(king_position.x).is_danger = true;
+		}
 	}
 }
 
 void Game::Run()
 {
-    Init("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	Init("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
 	sf::Text text;
 	sf::Font font;
@@ -73,29 +79,29 @@ void Game::Run()
 	text.setPosition(BOARD_SQUARE_INIT_SIZE * 1.43f, BOARD_SQUARE_INIT_SIZE * 3.5f);
 
 	while (m_window.isOpen())
-    {
-        sf::Event event;
+	{
+		sf::Event event;
 
-        while(m_window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                m_window.close();
-            }
+		while (m_window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				m_window.close();
+			}
 
-            if (event.type == sf::Event::Resized)
-            {
+			if (event.type == sf::Event::Resized)
+			{
 				m_board_square_size_x = m_window.getSize().x / BOARD_WIDTH;
 				m_board_square_size_y = m_window.getSize().y / BOARD_HEIGHT;
-            }
+			}
 
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
 			{
 				Reset();
 			}
 
-            if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Left))
-            {
+			if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Left))
+			{
 				sf::Vector2i mouse_position = sf::Mouse::getPosition(m_window);
 
 				if (!IsGameOver())
@@ -110,10 +116,10 @@ void Game::Run()
 					}
 				}
 			}
-        }
+		}
 
-        m_window.clear(sf::Color::White);
-        m_window.draw(m_board);
+		m_window.clear(sf::Color::White);
+		m_window.draw(m_board);
 
 		if (m_pawn_promotion_pieces.front() != nullptr)
 		{
@@ -130,7 +136,7 @@ void Game::Run()
 		}
 
 		m_window.display();
-    }
+	}
 }
 
 void Game::Reset(const PlayerArray* const players)
@@ -197,7 +203,8 @@ bool Game::MakeMove(Position src, Position dest)
 		return false;
 	}
 
-	std::list<Move>::iterator moves_iterator = std::find_if(m_possible_moves.begin(), m_possible_moves.end(), [dest](const Move& move){ return move.get_dest_position() == dest; });
+	std::list<Move>::iterator moves_iterator = std::find_if(m_possible_moves.begin(), m_possible_moves.end(),
+															[dest](const Move &move){ return move.get_dest_position() == dest; });
 
 	if (!src_piece || src_piece->get_team() != m_current_turn || moves_iterator == m_possible_moves.end())
 	{
@@ -208,10 +215,10 @@ bool Game::MakeMove(Position src, Position dest)
 	{
 		m_halfmove_clock = 0;
 	}
-    else
-    {
-        ++m_halfmove_clock;
-    }
+	else
+	{
+		++m_halfmove_clock;
+	}
 
 	if (m_current_turn == ISXChess::Team::BLACK)
 	{
@@ -378,7 +385,7 @@ void Game::CheckSpecialMoves(const Move& move)
 		{
 			throw std::runtime_error("King side rook cannot be null during castling");
 		}
-		
+
 		king_side_rook->set_first_move(false);
 		king_side_rook->get_sprite().setPosition(m_board.get_chess_board()[dest.y][(src.x + dest.x) / 2].square.getPosition());
 		m_board.get_chess_board()[dest.y][(src.x + dest.x) / 2].piece = std::move(king_side_rook);
