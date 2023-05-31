@@ -1,5 +1,9 @@
-# Prerequisites
-*.d
+# Build results
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
 
 # Compiled Object files
 *.slo
@@ -7,18 +11,10 @@
 *.o
 *.obj
 
-# Precompiled Headers
-*.gch
-*.pch
-
 # Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
 
 # Compiled Static libraries
 *.lai
@@ -30,3 +26,48 @@
 *.exe
 *.out
 *.app
+
+# Log files
+*.tlog
+*.log
+
+# Linker files
+*.exp
+*.ilk
+*.pdb
+
+# NuGet Packages
+packages/
+*.nupkg
+*.snupkg
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.idb
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+
+# Visual Studio cache/options directory
+.vs/
+
+# Visual Studio Code settings directory
+.vscode/
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
