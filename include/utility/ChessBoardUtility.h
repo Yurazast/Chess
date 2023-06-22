@@ -16,6 +16,7 @@ bool HasEnemyPiece(const ISXChess::ChessBoard& chess_board, Position position, I
 bool IsObstacleBetween(const ISXChess::ChessBoard& chess_board, Position src, Position dest);
 
 void InitSquares(ISXChess::ChessBoard& chess_board);
+void ClearSquaresStates(ISXChess::ChessBoard& chess_board, uint8_t state_to_clear = BoardSquare::State::NONE);
 
 }
 

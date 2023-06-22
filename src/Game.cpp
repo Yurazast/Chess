@@ -61,7 +61,7 @@ void Game::Init(const std::string& fen)
 		if (IsInCheck())
 		{
 			const Position king_position = m_board.FindKingPosition(fen_info.current_turn);
-			m_board.get_chess_board().at(king_position.y).at(king_position.x).is_danger = true;
+			m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
 		}
 	}
 }
@@ -245,6 +245,10 @@ bool Game::MakeMove(Position src, Position dest)
 	CheckSpecialMoves(move);
 	m_played_moves.push_back(move);
 
+	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::MOVE);
+	m_board.get_chess_board()[src.y][src.x].state |= BoardSquare::State::MOVE;
+	m_board.get_chess_board()[dest.y][dest.x].state |= BoardSquare::State::MOVE;
+
 	SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
 	return true;
 }
@@ -265,7 +269,7 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 	if (piece != nullptr && piece->get_team() == m_current_turn)
 	{
 		m_selected_piece_position = board_square_position;
-		m_board.ClearHighlightedSquares();
+		ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::HIGHLIGHTED | BoardSquare::State::SELECTED);
 
 		m_possible_moves.clear();
 		m_possible_moves = piece->GeneratePossibleMoves(m_board.get_chess_board(), m_selected_piece_position);
@@ -275,27 +279,29 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 		for (const Move& move : m_possible_moves)
 		{
 			Position position = move.get_dest_position();
-			m_board.get_chess_board().at(position.y).at(position.x).is_highlighted = true;
+			m_board.get_chess_board().at(position.y).at(position.x).state |= BoardSquare::State::HIGHLIGHTED;
 		}
+
+		m_board.get_chess_board().at(board_square_position.y).at(board_square_position.x).state |= BoardSquare::State::SELECTED;
 	}
 	else if (!m_selected_piece_position.IsInvalid())
 	{
 		if (MakeMove(m_selected_piece_position, board_square_position))
 		{
 			SwitchTurn();
-			m_board.ClearDangerSquares();
+			ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::DANGER);
 
 			if (IsInCheck())
 			{
 				const Position king_position = m_board.FindKingPosition(m_current_turn);
-				m_board.get_chess_board().at(king_position.y).at(king_position.x).is_danger = true;
+				m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
 
 				SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
 			}
 		}
 
 		m_selected_piece_position = INVALID_POSITION;
-		m_board.ClearHighlightedSquares();
+		ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::HIGHLIGHTED | BoardSquare::State::SELECTED);
 	}
 }
 
@@ -334,7 +340,7 @@ void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 	if (IsInCheck())
 	{
 		const Position king_position = m_board.FindKingPosition(m_current_turn);
-		m_board.get_chess_board().at(king_position.y).at(king_position.x).is_danger = true;
+		m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
 
 		SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
 	}

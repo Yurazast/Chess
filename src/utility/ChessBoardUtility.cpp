@@ -64,20 +64,31 @@ void InitSquares(ISXChess::ChessBoard& chess_board)
 		for (uint8_t x = 0; x < BOARD_WIDTH; ++x)
 		{
 			sf::RectangleShape& square = chess_board.at(y).at(x).square;
-			sf::RectangleShape& highlight_square = chess_board.at(y).at(x).highlight_square;
-			sf::RectangleShape& danger_square = chess_board.at(y).at(x).danger_square;
+			sf::Color& init_color = chess_board.at(y).at(x).init_color;
 
 			square.setSize(sf::Vector2f(BOARD_SQUARE_INIT_SIZE, BOARD_SQUARE_INIT_SIZE));
 			square.setPosition(sf::Vector2f(x * BOARD_SQUARE_INIT_SIZE, y * BOARD_SQUARE_INIT_SIZE));
-			(!(y % 2 == 0) != !(x % 2 == 0)) ? square.setFillColor(BOARD_SQUARE_BLACK_COLOR) : square.setFillColor(BOARD_SQUARE_WHITE_COLOR);
+			init_color = (!(y % 2 == 0) != !(x % 2 == 0)) ? BOARD_SQUARE_BLACK_COLOR : BOARD_SQUARE_WHITE_COLOR;
+		}
+	}
+}
 
-			highlight_square.setSize(sf::Vector2f(BOARD_SQUARE_INIT_SIZE, BOARD_SQUARE_INIT_SIZE));
-			highlight_square.setPosition(sf::Vector2f(x * BOARD_SQUARE_INIT_SIZE, y * BOARD_SQUARE_INIT_SIZE));
-			highlight_square.setFillColor(BOARD_SQUARE_HIGHLIGHT_COLOR);
+void ClearSquaresStates(ISXChess::ChessBoard& chess_board, uint8_t state_to_clear)
+{
+	for (uint8_t y = 0; y < BOARD_HEIGHT; ++y)
+	{
+		for (uint8_t x = 0; x < BOARD_WIDTH; ++x)
+		{
+			uint8_t& board_square_state = chess_board.at(y).at(x).state;
 
-			danger_square.setSize(sf::Vector2f(BOARD_SQUARE_INIT_SIZE, BOARD_SQUARE_INIT_SIZE));
-			danger_square.setPosition(sf::Vector2f(x * BOARD_SQUARE_INIT_SIZE, y * BOARD_SQUARE_INIT_SIZE));
-			danger_square.setFillColor(BOARD_SQUARE_DANGER_COLOR);
+			if (state_to_clear == BoardSquare::State::NONE)
+			{
+				board_square_state = BoardSquare::State::NONE;
+			}
+			else if (board_square_state & state_to_clear)
+			{
+				board_square_state ^= board_square_state & state_to_clear;
+			}
 		}
 	}
 }

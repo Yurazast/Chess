@@ -34,49 +34,32 @@ void Board::Clear()
 	m_chess_board.at(0).at(0).en_passant_position = INVALID_POSITION;
 }
 
-void Board::ClearHighlightedSquares()
-{
-	for (std::array<BoardSquare, BOARD_WIDTH>& row : m_chess_board)
-	{
-		for (BoardSquare& board_square : row)
-		{
-			board_square.is_highlighted = false;
-		}
-	}
-}
-
-void Board::ClearDangerSquares()
-{
-	for (std::array<BoardSquare, BOARD_WIDTH>& row : m_chess_board)
-	{
-		for (BoardSquare& board_square : row)
-		{
-			board_square.is_danger = false;
-		}
-	}
-}
-
 void Board::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
+	static std::map<BoardSquare::State, sf::Color> square_states_colors = {
+		{ BoardSquare::State::DANGER, BOARD_SQUARE_DANGER_COLOR },
+		{ BoardSquare::State::MOVE, BOARD_SQUARE_MOVE_COLOR },
+		{ BoardSquare::State::HIGHLIGHTED, BOARD_SQUARE_HIGHLIGHTED_COLOR },
+		{ BoardSquare::State::SELECTED, BOARD_SQUARE_SELECTED_COLOR },
+	};
+
 	for (uint8_t y = 0; y < BOARD_HEIGHT; ++y)
 	{
 		for (uint8_t x = 0; x < BOARD_WIDTH; ++x)
 		{
 			sf::RectangleShape square = m_chess_board.at(y).at(x).square;
-			sf::RectangleShape highlight_square = m_chess_board.at(y).at(x).highlight_square;
-			sf::RectangleShape danger_square = m_chess_board.at(y).at(x).danger_square;
 			std::shared_ptr<Piece> piece = m_chess_board.at(y).at(x).piece;
 
+			square.setFillColor(m_chess_board.at(y).at(x).init_color);
 			target.draw(square);
 
-			if (m_chess_board.at(y).at(x).is_highlighted)
+			for (const auto& [square_state, square_color] : square_states_colors)
 			{
-				target.draw(highlight_square);
-			}
-
-			if (m_chess_board.at(y).at(x).is_danger)
-			{
-				target.draw(danger_square);
+				if (m_chess_board.at(y).at(x).state & square_state)
+				{
+					square.setFillColor(square_color);
+					target.draw(square);
+				}
 			}
 
 			if (piece != nullptr)

@@ -18,8 +18,6 @@ public:
 	void Init();
 	void Reset();
 	void Clear();
-	void ClearHighlightedSquares();
-	void ClearDangerSquares();
 
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
