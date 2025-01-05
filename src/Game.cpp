@@ -91,8 +91,8 @@ void Game::Run()
 
 			if (event.type == sf::Event::Resized)
 			{
-				m_board_square_size_x = m_window.getSize().x / BOARD_WIDTH;
-				m_board_square_size_y = m_window.getSize().y / BOARD_HEIGHT;
+				m_board_square_size_x = static_cast<float>(m_window.getSize().x / BOARD_WIDTH);
+				m_board_square_size_y = static_cast<float>(m_window.getSize().y / BOARD_HEIGHT);
 			}
 
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
@@ -123,7 +123,7 @@ void Game::Run()
 
 		if (m_pawn_promotion_pieces.front() != nullptr)
 		{
-			for (const std::shared_ptr<Piece> piece : m_pawn_promotion_pieces)
+			for (const std::shared_ptr<Piece>& piece : m_pawn_promotion_pieces)
 			{
 				m_window.draw(*piece);
 			}
@@ -227,7 +227,7 @@ bool Game::MakeMove(Position src, Position dest)
 
 	if (src_piece->get_type() == Piece::Type::PAWN && src_piece->is_first_move() && abs(dest.y - src.y) == 2)
 	{
-		Position en_passant_square = { dest.x, (src.y + dest.y) / 2 };
+		Position en_passant_square = { dest.x, static_cast<int8_t>((src.y + dest.y) / 2) };
 		m_board.get_chess_board()[en_passant_square.y][en_passant_square.x].en_passant_position = en_passant_square;
 	}
 	else
@@ -255,8 +255,8 @@ bool Game::MakeMove(Position src, Position dest)
 
 void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 {
-	int8_t board_square_x = (mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x;
-	int8_t board_square_y = (mouse_position.y - (m_window.getSize().y - m_board_square_size_y * BOARD_WIDTH) / 2) / m_board_square_size_y;
+	int8_t board_square_x = static_cast<int8_t>((mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x);
+	int8_t board_square_y = static_cast<int8_t>((mouse_position.y - (m_window.getSize().y - m_board_square_size_y * BOARD_WIDTH) / 2) / m_board_square_size_y);
 	Position board_square_position{ board_square_x, board_square_y };
 
 	if (!ISXUtility::IsValidBorders(board_square_position))
@@ -309,10 +309,10 @@ void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 {
 	float board_square_x = (mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x;
 	float board_square_y = (mouse_position.y - (m_window.getSize().y - m_board_square_size_y * BOARD_WIDTH) / 2) / m_board_square_size_y;
-	Position board_square_position{ board_square_x, board_square_y };
+	Position board_square_position{ static_cast<int8_t>(board_square_x), static_cast<int8_t>(board_square_y) };
 
 	sf::Vector2f pieces_pos = m_pawn_promotion_pieces.front()->get_sprite().getPosition();
-	Position pieces_position = { pieces_pos.x / BOARD_SQUARE_INIT_SIZE, pieces_pos.y / BOARD_SQUARE_INIT_SIZE };
+	Position pieces_position = { static_cast<int8_t>(pieces_pos.x / BOARD_SQUARE_INIT_SIZE), static_cast<int8_t>(pieces_pos.y / BOARD_SQUARE_INIT_SIZE) };
 
 	if (board_square_position != pieces_position)
 	{

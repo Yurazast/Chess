@@ -16,7 +16,7 @@ std::list<Move> Pawn::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 
 	int8_t step_forward = ISXUtility::IsWhiteSide(this->m_team) ? -1 : 1;
 
-	std::list<Position> forward_shifts{{ 0, step_forward }, { 0, 2*step_forward }};
+	std::list<Position> forward_shifts{{ 0, step_forward }, { 0, static_cast<int8_t>(2*step_forward) }};
 	std::list<Position> attack_shifts{{ -1, step_forward }, { 1, step_forward }};
 
 	for (Position shift : forward_shifts)

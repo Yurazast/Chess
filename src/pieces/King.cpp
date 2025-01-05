@@ -99,7 +99,7 @@ bool King::IsCastling(Position src, Position dest, const ISXChess::ChessBoard& c
 		Position king_side_rook_position = ISXUtility::IsWhiteSide(this->m_team) ? Position{ 7, 7 } : Position{ 7, 0 };
 		std::shared_ptr<Piece> king_side_rook = chess_board.at(king_side_rook_position.y).at(king_side_rook_position.x).piece;
 
-		return !ISXUtility::IsObstacleBetween(chess_board, src, { dest.x + 1, dest.y })
+		return !ISXUtility::IsObstacleBetween(chess_board, src, { static_cast<int8_t>(dest.x + 1), dest.y })
 			&& king_side_rook && king_side_rook->get_type() == Piece::Type::ROOK && king_side_rook->get_team() == this->m_team
 			&& this->is_first_move() && king_side_rook->is_first_move();
 	}
@@ -108,7 +108,7 @@ bool King::IsCastling(Position src, Position dest, const ISXChess::ChessBoard& c
 		Position queen_side_rook_position = ISXUtility::IsWhiteSide(this->m_team) ? Position{ 0, 7 } : Position{ 0, 0 };
 		std::shared_ptr<Piece> queen_side_rook = chess_board.at(queen_side_rook_position.y).at(queen_side_rook_position.x).piece;
 
-		return !ISXUtility::IsObstacleBetween(chess_board, src, { dest.x - 2, dest.y })
+		return !ISXUtility::IsObstacleBetween(chess_board, src, { static_cast<int8_t>(dest.x - 2), dest.y })
 			&& queen_side_rook && queen_side_rook->get_type() == Piece::Type::ROOK && queen_side_rook->get_team() == this->m_team
 			&& this->is_first_move() && queen_side_rook->is_first_move();
 	}

@@ -19,12 +19,12 @@ Position& Position::operator-=(const Position& pos)
 
 Position Position::operator+(const Position& pos) const
 {
-    return Position{ this->x + pos.x, this->y + pos.y };
+    return Position{ static_cast<int8_t>(this->x + pos.x), static_cast<int8_t>(this->y + pos.y) };
 }
 
 Position Position::operator-(const Position& pos) const
 {
-    return Position{ this->x - pos.x, this->y - pos.y };
+    return Position{ static_cast<int8_t>(this->x - pos.x), static_cast<int8_t>(this->y - pos.y) };
 }
 
 bool Position::operator<(const Position& pos) const

@@ -10,7 +10,7 @@ Piece::Piece(char abbreviation, ISXChess::Team team, Piece::Type type, unsigned 
 	, m_first_move(true)
 {}
 
-void Piece::draw(sf::RenderTarget& target, sf::RenderStates states) const
+void Piece::draw(sf::RenderTarget& target, [[maybe_unused]] sf::RenderStates states) const
 {
 	target.draw(m_sprite);
 }

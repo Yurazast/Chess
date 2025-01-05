@@ -34,7 +34,7 @@ void Board::Clear()
 	m_chess_board.at(0).at(0).en_passant_position = INVALID_POSITION;
 }
 
-void Board::draw(sf::RenderTarget& target, sf::RenderStates states) const
+void Board::draw(sf::RenderTarget& target, [[maybe_unused]] sf::RenderStates states) const
 {
 	static std::map<BoardSquare::State, sf::Color> square_states_colors = {
 		{ BoardSquare::State::DANGER, BOARD_SQUARE_DANGER_COLOR },

@@ -15,6 +15,6 @@ std::shared_ptr<Piece> PieceFactory::Create(char piece_character, ISXChess::Team
 		case 'b': return std::make_shared<Bishop>(team);
 		case 'q': return std::make_shared<Queen>(team);
 		case 'k': return std::make_shared<King>(team);
-		default: throw std::runtime_error("No such piece by character: " + piece_character);
+		default: throw std::runtime_error("No such piece by character: " + std::to_string(piece_character));
 	}
 }
