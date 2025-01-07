@@ -22,6 +22,9 @@ x86/
 *.a
 *.lib
 
+# Clangd cache directory
+.cache/
+
 # Executables
 *.exe
 *.out
