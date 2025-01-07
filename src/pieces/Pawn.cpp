@@ -5,7 +5,7 @@
 Position BoardSquare::en_passant_position = INVALID_POSITION;
 
 Pawn::Pawn(ISXChess::Team team)
-	: Piece('P', team, Piece::Type::PAWN, 1)
+	: Piece(team, Piece::Type::PAWN, 1)
 {
 	LoadImageFromFile(ISXUtility::IsWhiteSide(team) ? WHITE_PAWN_IMAGE_FILEPATH : BLACK_PAWN_IMAGE_FILEPATH);
 }

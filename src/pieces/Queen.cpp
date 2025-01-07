@@ -3,7 +3,7 @@
 #include "Move.h"
 
 Queen::Queen(ISXChess::Team team)
-	: Piece('Q', team, Piece::Type::QUEEN, 9)
+	: Piece(team, Piece::Type::QUEEN, 9)
 {
 	LoadImageFromFile(ISXUtility::IsWhiteSide(team) ? WHITE_QUEEN_IMAGE_FILEPATH : BLACK_QUEEN_IMAGE_FILEPATH);
 }

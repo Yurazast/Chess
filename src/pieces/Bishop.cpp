@@ -3,7 +3,7 @@
 #include "Move.h"
 
 Bishop::Bishop(ISXChess::Team team)
-	: Piece('B', team, Piece::Type::BISHOP, 3)
+	: Piece(team, Piece::Type::BISHOP, 3)
 {
 	LoadImageFromFile(ISXUtility::IsWhiteSide(team) ? WHITE_BISHOP_IMAGE_FILEPATH : BLACK_BISHOP_IMAGE_FILEPATH);
 }

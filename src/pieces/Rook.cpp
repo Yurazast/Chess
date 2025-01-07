@@ -3,7 +3,7 @@
 #include "Move.h"
 
 Rook::Rook(ISXChess::Team team)
-	: Piece('R', team, Piece::Type::ROOK, 5)
+	: Piece(team, Piece::Type::ROOK, 5)
 {
 	LoadImageFromFile(ISXUtility::IsWhiteSide(team) ? WHITE_ROOK_IMAGE_FILEPATH : BLACK_ROOK_IMAGE_FILEPATH);
 }

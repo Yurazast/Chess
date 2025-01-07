@@ -3,7 +3,7 @@
 #include "Move.h"
 
 Knight::Knight(ISXChess::Team team)
-	: Piece('N', team, Piece::Type::KNIGHT, 3)
+	: Piece(team, Piece::Type::KNIGHT, 3)
 {
 	LoadImageFromFile(ISXUtility::IsWhiteSide(team) ? WHITE_KNIGHT_IMAGE_FILEPATH : BLACK_KNIGHT_IMAGE_FILEPATH);
 }

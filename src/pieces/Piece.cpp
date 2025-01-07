@@ -2,9 +2,8 @@
 
 std::map<std::pair<ISXChess::Team, Piece::Type>, sf::Texture> Piece::s_textures;
 
-Piece::Piece(char abbreviation, ISXChess::Team team, Piece::Type type, unsigned int value)
-	: m_abbreviation(abbreviation)
-	, m_team(team)
+Piece::Piece(ISXChess::Team team, Piece::Type type, unsigned int value)
+	: m_team(team)
 	, m_type(type)
 	, m_value(value)
 	, m_first_move(true)
@@ -13,16 +12,6 @@ Piece::Piece(char abbreviation, ISXChess::Team team, Piece::Type type, unsigned 
 void Piece::draw(sf::RenderTarget& target, [[maybe_unused]] sf::RenderStates states) const
 {
 	target.draw(m_sprite);
-}
-
-char Piece::get_abbreviation() const
-{
-	return this->m_abbreviation;
-}
-
-void Piece::set_abbreviation(char abbreviation)
-{
-	this->m_abbreviation = abbreviation;
 }
 
 ISXChess::Team Piece::get_team() const

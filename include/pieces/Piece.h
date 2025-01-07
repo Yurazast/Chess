@@ -38,8 +38,6 @@ public:
 
 	void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
-	char get_abbreviation() const;
-	void set_abbreviation(char abbreviation);
 	ISXChess::Team get_team() const;
 	void set_team(ISXChess::Team team);
 	Piece::Type get_type() const;
@@ -51,11 +49,10 @@ public:
 	sf::Sprite& get_sprite();
 
 protected:
-	explicit Piece(char abbreviation, ISXChess::Team team, Piece::Type type, unsigned int value);
+	explicit Piece(ISXChess::Team team, Piece::Type type, unsigned int value);
 
 	void LoadImageFromFile(const std::string& filepath);
 
-	char m_abbreviation;
 	ISXChess::Team m_team;
 	Piece::Type m_type;
 	unsigned int m_value;

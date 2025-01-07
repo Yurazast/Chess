@@ -3,7 +3,7 @@
 #include "Move.h"
 
 King::King(ISXChess::Team team)
-	: Piece('K', team, Piece::Type::KING, 100)
+	: Piece(team, Piece::Type::KING, 100)
 	, m_king_side_castling(true)
 	, m_queen_side_castling(true)
 {
