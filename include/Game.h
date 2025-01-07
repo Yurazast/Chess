@@ -34,6 +34,7 @@ public:
 
 	void SwitchTurn();
 	bool MakeMove(Position src, Position dest);
+	void UndoMove();
 	bool IsGameOver();
 
 private:
@@ -42,7 +43,9 @@ private:
 
 	sf::String GetGameResults() const;
 
+	void CheckKingStatus();
 	void CheckSpecialMoves(const Move& move);
+	void UndoSpecialMoves(const Move& move);
 	std::list<Move> GeneratePossibleMoves();
 	void RemoveMovesLeadingToCheck(std::list<Move>& moves);
 	bool CanMove();

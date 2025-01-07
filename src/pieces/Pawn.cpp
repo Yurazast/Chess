@@ -1,5 +1,4 @@
 #include "pieces/Pawn.h"
-#include "Board.h"
 #include "Move.h"
 
 Position BoardSquare::en_passant_position = INVALID_POSITION;
@@ -31,7 +30,7 @@ std::list<Move> Pawn::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 				move_type = Move::Type::PAWN_PROMOTION;
 			}
 
-			moves.push_back(Move{ position, dest, move_type, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest) });
+			moves.push_back(Move{ position, dest, move_type, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest), m_first_move });
 		}
 	}
 
@@ -42,6 +41,8 @@ std::list<Move> Pawn::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 
 		if (IsMoveValid(position, dest, chess_board))
 		{
+			std::shared_ptr<Piece> dest_piece = ISXUtility::GetPiece(chess_board, dest);
+
 			if ((this->m_team == ISXChess::Team::WHITE && dest.y == WHITE_TEAM_START_Y) || (this->m_team == ISXChess::Team::BLACK && dest.y == BLACK_TEAM_START_Y))
 			{
 				move_type = Move::Type::PAWN_PROMOTION;
@@ -49,9 +50,10 @@ std::list<Move> Pawn::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 			else if (chess_board.at(dest.y).at(dest.x).en_passant_position == dest)
 			{
 				move_type = Move::Type::EN_PASSANT;
+				dest_piece = ISXUtility::GetPiece(chess_board, { dest.x, position.y });
 			}
 
-			moves.push_back(Move{ position, dest, move_type, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest) });
+			moves.push_back(Move{ position, dest, move_type, ISXUtility::GetPiece(chess_board, position), dest_piece, m_first_move });
 		}
 	}
 

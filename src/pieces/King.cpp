@@ -1,5 +1,4 @@
 #include "pieces/King.h"
-#include "Board.h"
 #include "Move.h"
 
 King::King(ISXChess::Team team)
@@ -23,7 +22,7 @@ std::list<Move> King::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 
 		if (IsMoveValid(position, dest, chess_board))
 		{
-			moves.push_back(Move{ position, dest, Move::Type::REGULAR, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest) });
+			moves.push_back(Move{ position, dest, Move::Type::REGULAR, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest), m_first_move });
 		}
 	}
 
@@ -33,7 +32,7 @@ std::list<Move> King::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 
 		if (IsMoveValid(position, dest, chess_board))
 		{
-			moves.push_back(Move{ position, dest, Move::Type::KING_SIDE_CASTLING, ISXUtility::GetPiece(chess_board, position), std::weak_ptr<Piece>() });
+			moves.push_back(Move{ position, dest, Move::Type::KING_SIDE_CASTLING, ISXUtility::GetPiece(chess_board, position), nullptr, m_first_move });
 		}
 	}
 	if (this->m_queen_side_castling)
@@ -42,7 +41,7 @@ std::list<Move> King::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_bo
 
 		if (IsMoveValid(position, dest, chess_board))
 		{
-			moves.push_back(Move{ position, dest, Move::Type::QUEEN_SIDE_CASTLING, ISXUtility::GetPiece(chess_board, position), std::weak_ptr<Piece>() });
+			moves.push_back(Move{ position, dest, Move::Type::QUEEN_SIDE_CASTLING, ISXUtility::GetPiece(chess_board, position), nullptr, m_first_move });
 		}
 	}
 

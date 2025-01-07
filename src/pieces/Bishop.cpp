@@ -1,5 +1,4 @@
 #include "pieces/Bishop.h"
-#include "Board.h"
 #include "Move.h"
 
 Bishop::Bishop(ISXChess::Team team)
@@ -20,7 +19,7 @@ std::list<Move> Bishop::GeneratePossibleMoves(const ISXChess::ChessBoard& chess_
 
 		while (IsMoveValid(position, dest, chess_board))
 		{
-			moves.push_back(Move{ position, dest, Move::Type::REGULAR, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest) });
+			moves.push_back(Move{ position, dest, Move::Type::REGULAR, ISXUtility::GetPiece(chess_board, position), ISXUtility::GetPiece(chess_board, dest), m_first_move });
 			dest += shift;
 		}
 	}

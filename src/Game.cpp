@@ -58,11 +58,7 @@ void Game::Init(const std::string& fen)
 		this->m_halfmove_clock = fen_info.halfmove_clock;
 		this->m_fullmove_counter = fen_info.fullmove_counter;
 
-		if (IsInCheck())
-		{
-			const Position king_position = m_board.FindKingPosition(fen_info.current_turn);
-			m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
-		}
+		CheckKingStatus();
 	}
 }
 
@@ -98,6 +94,11 @@ void Game::Run()
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
 			{
 				Reset();
+			}
+
+			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Z)
+			{
+				UndoMove();
 			}
 
 			if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Left))
@@ -195,21 +196,25 @@ bool Game::IsGameOver()
 
 bool Game::MakeMove(Position src, Position dest)
 {
-	std::shared_ptr<Piece> src_piece = m_board.get_chess_board()[src.y][src.x].piece;
-	std::shared_ptr<Piece> dest_piece = m_board.get_chess_board()[dest.y][dest.x].piece;
-
-	if (m_possible_moves.empty())
+	if (!ISXUtility::IsValidBorders(src) || !ISXUtility::IsValidBorders(dest) || m_possible_moves.empty())
 	{
 		return false;
 	}
 
+	std::shared_ptr<Piece> src_piece = m_board.get_chess_board()[src.y][src.x].piece;
+	std::shared_ptr<Piece> dest_piece = m_board.get_chess_board()[dest.y][dest.x].piece;
+
 	std::list<Move>::iterator moves_iterator = std::find_if(m_possible_moves.begin(), m_possible_moves.end(),
-															[dest](const Move &move){ return move.get_dest_position() == dest; });
+															[src, dest](const Move &move){ return move.get_src_position() == src && move.get_dest_position() == dest; });
 
 	if (!src_piece || src_piece->get_team() != m_current_turn || moves_iterator == m_possible_moves.end())
 	{
 		return false;
 	}
+
+	Move move = *moves_iterator;
+	move.set_halfmove_clock(m_halfmove_clock);
+	move.set_fullmove_counter(m_fullmove_counter);
 
 	if (dest_piece != nullptr || src_piece->get_type() == Piece::Type::PAWN)
 	{
@@ -229,6 +234,7 @@ bool Game::MakeMove(Position src, Position dest)
 	{
 		Position en_passant_square = { dest.x, static_cast<int8_t>((src.y + dest.y) / 2) };
 		m_board.get_chess_board()[en_passant_square.y][en_passant_square.x].en_passant_position = en_passant_square;
+		move.set_en_passant_position(en_passant_square);
 	}
 	else
 	{
@@ -240,8 +246,6 @@ bool Game::MakeMove(Position src, Position dest)
 	m_board.get_chess_board()[dest.y][dest.x].piece = std::move(src_piece);
 	m_board.get_chess_board()[src.y][src.x].piece = nullptr;
 
-	Move move = *moves_iterator;
-
 	CheckSpecialMoves(move);
 	m_played_moves.push_back(move);
 
@@ -251,6 +255,53 @@ bool Game::MakeMove(Position src, Position dest)
 
 	SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
 	return true;
+}
+
+void Game::UndoMove()
+{
+	if (m_played_moves.empty())
+	{
+		return;
+	}
+
+	SwitchTurn();
+
+	Move move = m_played_moves.back();
+	m_played_moves.pop_back();
+
+	Position src = move.get_src_position();
+	Position dest = move.get_dest_position();
+	Move::Type move_type = move.get_type();
+	std::shared_ptr<Piece> src_piece = move.get_piece_moved();
+	std::shared_ptr<Piece> dest_piece = move.get_piece_defeated();
+
+	src_piece->set_first_move(move.is_first_move());
+	src_piece->get_sprite().setPosition(m_board.get_chess_board()[src.y][src.x].square.getPosition());
+	m_board.get_chess_board()[dest.y][dest.x].piece = nullptr;
+	m_board.get_chess_board()[src.y][src.x].piece = std::move(src_piece);
+
+	if (dest_piece != nullptr && move_type != Move::Type::EN_PASSANT)
+	{
+		m_board.get_chess_board()[dest.y][dest.x].piece = std::move(dest_piece);
+	}
+
+	m_halfmove_clock = move.get_halfmove_clock();
+	m_fullmove_counter = move.get_fullmove_counter();
+
+	UndoSpecialMoves(move);
+
+	m_selected_piece_position = INVALID_POSITION;
+	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::HIGHLIGHTED | BoardSquare::State::SELECTED | BoardSquare::State::MOVE);
+	m_board.get_chess_board()[src.y][src.x].state |= BoardSquare::State::MOVE;
+	m_board.get_chess_board()[dest.y][dest.x].state |= BoardSquare::State::MOVE;
+
+	SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
+	CheckKingStatus();
+
+	if (IsGameOver())
+	{
+		m_status = Game::Status::ACTIVE;
+	}
 }
 
 void Game::OnMouseClick(const sf::Vector2i& mouse_position)
@@ -289,15 +340,7 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 		if (MakeMove(m_selected_piece_position, board_square_position))
 		{
 			SwitchTurn();
-			ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::DANGER);
-
-			if (IsInCheck())
-			{
-				const Position king_position = m_board.FindKingPosition(m_current_turn);
-				m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
-
-				SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
-			}
+			CheckKingStatus();
 		}
 
 		m_selected_piece_position = INVALID_POSITION;
@@ -336,14 +379,7 @@ void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 	m_pawn_promotion_pieces.fill(nullptr);
 
 	SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
-
-	if (IsInCheck())
-	{
-		const Position king_position = m_board.FindKingPosition(m_current_turn);
-		m_board.get_chess_board().at(king_position.y).at(king_position.x).state |= BoardSquare::State::DANGER;
-
-		SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
-	}
+	CheckKingStatus();
 }
 
 sf::String Game::GetGameResults() const
@@ -369,6 +405,19 @@ sf::String Game::GetGameResults() const
 
 	status_string += "Press R to restart the game";
 	return status_string;
+}
+
+void Game::CheckKingStatus()
+{
+	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::DANGER);
+
+	if (IsInCheck())
+	{
+		const Position king_position = m_board.FindKingPosition(m_current_turn);
+		m_board.get_chess_board().at(king_position.y).at(king_position.x).state = BoardSquare::State::DANGER;
+
+		SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
+	}
 }
 
 void Game::CheckSpecialMoves(const Move& move)
@@ -439,6 +488,56 @@ void Game::CheckSpecialMoves(const Move& move)
 			piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 2 / 128, BOARD_SQUARE_INIT_SIZE / 2 / 128));
 			++i;
 		}
+	}
+}
+
+void Game::UndoSpecialMoves(const Move& move)
+{
+	Position src = move.get_src_position(), dest = move.get_dest_position();
+	Move::Type move_type = move.get_type();
+
+	if (move_type == Move::Type::EN_PASSANT)
+	{
+		Position en_passant_square = m_played_moves.back().get_en_passant_position();
+		m_board.get_chess_board()[en_passant_square.y][en_passant_square.x].en_passant_position = en_passant_square;
+		m_board.get_chess_board()[src.y][dest.x].piece = std::move(move.get_piece_defeated());
+	}
+
+	if (move_type == Move::Type::KING_SIDE_CASTLING)
+	{
+		Position king_side_rook_position = ISXUtility::IsWhiteSide(m_current_turn) ? Position{ 5, 7 } : Position{ 5, 0 };
+		std::shared_ptr<Rook> king_side_rook = std::static_pointer_cast<Rook>(m_board.get_chess_board()[king_side_rook_position.y][king_side_rook_position.x].piece);
+
+		if (king_side_rook == nullptr)
+		{
+			throw std::runtime_error("King side rook cannot be null when undoing the move");
+		}
+
+		king_side_rook->set_first_move(true);
+		king_side_rook->get_sprite().setPosition(m_board.get_chess_board()[dest.y][static_cast<int8_t>(dest.x + 1)].square.getPosition());
+		m_board.get_chess_board()[dest.y][static_cast<int8_t>(dest.x + 1)].piece = std::move(king_side_rook);
+		m_board.get_chess_board()[king_side_rook_position.y][king_side_rook_position.x].piece = nullptr;
+
+		SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
+		std::this_thread::sleep_for(std::chrono::milliseconds(70));
+	}
+	else if (move_type == Move::Type::QUEEN_SIDE_CASTLING)
+	{
+		Position queen_side_rook_position = ISXUtility::IsWhiteSide(m_current_turn) ? Position{ 3, 7 } : Position{ 3, 0 };
+		std::shared_ptr<Rook> queen_side_rook = std::static_pointer_cast<Rook>(m_board.get_chess_board()[queen_side_rook_position.y][queen_side_rook_position.x].piece);
+
+		if (queen_side_rook == nullptr)
+		{
+			throw std::runtime_error("Queen side rook cannot be null when undoing the move");
+		}
+
+		queen_side_rook->set_first_move(true);
+		queen_side_rook->get_sprite().setPosition(m_board.get_chess_board()[dest.y][static_cast<int8_t>(dest.x - 2)].square.getPosition());
+		m_board.get_chess_board()[dest.y][static_cast<int8_t>(dest.x - 2)].piece = std::move(queen_side_rook);
+		m_board.get_chess_board()[queen_side_rook_position.y][queen_side_rook_position.x].piece = nullptr;
+
+		SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
+		std::this_thread::sleep_for(std::chrono::milliseconds(70));
 	}
 }
 
