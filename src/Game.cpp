@@ -4,7 +4,9 @@ Game::Game(sf::RenderWindow& window, PlayerArray players)
 	: m_board{}
 	, m_window{ window }
 	, m_players{ players }
-	, m_played_moves{}
+	, m_possible_moves{}
+	, m_undo_moves{}
+	, m_redo_moves{}
 	, m_status{ Game::Status::ACTIVE }
 	, m_selected_piece_position{ INVALID_POSITION }
 	, m_pawn_promotion_pieces{}
@@ -87,8 +89,8 @@ void Game::Run()
 
 			if (event.type == sf::Event::Resized)
 			{
-				m_board_square_size_x = static_cast<float>(m_window.getSize().x / BOARD_WIDTH);
-				m_board_square_size_y = static_cast<float>(m_window.getSize().y / BOARD_HEIGHT);
+				m_board_square_size_x = static_cast<float>(m_window.getSize().x) / BOARD_WIDTH;
+				m_board_square_size_y = static_cast<float>(m_window.getSize().y) / BOARD_HEIGHT;
 			}
 
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
@@ -99,6 +101,11 @@ void Game::Run()
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Z)
 			{
 				UndoMove();
+			}
+
+			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Y)
+			{
+				RedoMove();
 			}
 
 			if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Left))
@@ -143,7 +150,9 @@ void Game::Run()
 void Game::Reset(const PlayerArray* const players)
 {
 	m_board.Clear();
-	m_played_moves.clear();
+	m_possible_moves.clear();
+	m_undo_moves.clear();
+	m_redo_moves.clear();
 	m_pawn_promotion_pieces.fill(nullptr);
 
 	if (players)
@@ -157,41 +166,6 @@ void Game::Reset(const PlayerArray* const players)
 	m_fullmove_counter = 1;
 
 	Init();
-}
-
-void Game::SwitchTurn()
-{
-	this->m_current_turn = ISXUtility::IsWhiteSide(this->m_current_turn) ? ISXChess::Team::BLACK : ISXChess::Team::WHITE;
-}
-
-bool Game::IsGameOver()
-{
-	if (m_status != Game::Status::ACTIVE)
-	{
-		return true;
-	}
-
-	if (m_halfmove_clock == 100)
-	{
-		m_status = Game::Status::DRAW;
-		return true;
-	}
-
-	if (!CanMove())
-	{
-		if (IsInCheck())
-		{
-			m_status = ISXUtility::IsWhiteSide(m_current_turn) ? Game::Status::BLACK_WIN : Game::Status::WHITE_WIN;
-		}
-		else
-		{
-			m_status = Game::Status::STALEMATE;
-		}
-
-		return true;
-	}
-
-	return false;
 }
 
 bool Game::MakeMove(Position src, Position dest)
@@ -247,7 +221,7 @@ bool Game::MakeMove(Position src, Position dest)
 	m_board.get_chess_board()[src.y][src.x].piece = nullptr;
 
 	CheckSpecialMoves(move);
-	m_played_moves.push_back(move);
+	m_undo_moves.push_back(move);
 
 	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::MOVE);
 	m_board.get_chess_board()[src.y][src.x].state |= BoardSquare::State::MOVE;
@@ -259,15 +233,16 @@ bool Game::MakeMove(Position src, Position dest)
 
 void Game::UndoMove()
 {
-	if (m_played_moves.empty())
+	if (m_undo_moves.empty())
 	{
 		return;
 	}
 
 	SwitchTurn();
 
-	Move move = m_played_moves.back();
-	m_played_moves.pop_back();
+	Move move = m_undo_moves.back();
+	m_undo_moves.pop_back();
+	m_redo_moves.push_back(move);
 
 	Position src = move.get_src_position();
 	Position dest = move.get_dest_position();
@@ -279,6 +254,9 @@ void Game::UndoMove()
 	src_piece->get_sprite().setPosition(m_board.get_chess_board()[src.y][src.x].square.getPosition());
 	m_board.get_chess_board()[dest.y][dest.x].piece = nullptr;
 	m_board.get_chess_board()[src.y][src.x].piece = std::move(src_piece);
+
+	m_board.get_chess_board()[0][0].en_passant_position = !m_undo_moves.empty() ? m_undo_moves.back().get_en_passant_position() : INVALID_POSITION;
+	m_pawn_promotion_pieces.fill(nullptr);
 
 	if (dest_piece != nullptr && move_type != Move::Type::EN_PASSANT)
 	{
@@ -304,6 +282,65 @@ void Game::UndoMove()
 	}
 }
 
+void Game::RedoMove()
+{
+	if (m_redo_moves.empty())
+	{
+		return;
+	}
+
+	Move move = m_redo_moves.back();
+	m_redo_moves.pop_back();
+
+	m_possible_moves = move.get_piece_moved()->GeneratePossibleMoves(m_board.get_chess_board(), move.get_src_position());
+
+	if (MakeMove(move.get_src_position(), move.get_dest_position()))
+	{
+		SwitchTurn();
+		CheckKingStatus();
+	}
+
+	RedoSpecialMoves(move);
+
+	m_selected_piece_position = INVALID_POSITION;
+	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::HIGHLIGHTED | BoardSquare::State::SELECTED);
+}
+
+void Game::SwitchTurn()
+{
+	this->m_current_turn = ISXUtility::IsWhiteSide(this->m_current_turn) ? ISXChess::Team::BLACK : ISXChess::Team::WHITE;
+}
+
+bool Game::IsGameOver()
+{
+	if (m_status != Game::Status::ACTIVE)
+	{
+		return true;
+	}
+
+	if (m_halfmove_clock == 100)
+	{
+		m_status = Game::Status::DRAW;
+		return true;
+	}
+
+	if (!CanMove())
+	{
+		if (IsInCheck())
+		{
+			m_status = ISXUtility::IsWhiteSide(m_current_turn) ? Game::Status::BLACK_WIN : Game::Status::WHITE_WIN;
+		}
+		else
+		{
+			m_status = Game::Status::STALEMATE;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 {
 	int8_t board_square_x = static_cast<int8_t>((mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x);
@@ -322,7 +359,6 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 		m_selected_piece_position = board_square_position;
 		ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::HIGHLIGHTED | BoardSquare::State::SELECTED);
 
-		m_possible_moves.clear();
 		m_possible_moves = piece->GeneratePossibleMoves(m_board.get_chess_board(), m_selected_piece_position);
 
 		RemoveMovesLeadingToCheck(m_possible_moves);
@@ -341,6 +377,7 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 		{
 			SwitchTurn();
 			CheckKingStatus();
+			m_redo_moves.clear();
 		}
 
 		m_selected_piece_position = INVALID_POSITION;
@@ -376,48 +413,11 @@ void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 	piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
 
 	m_board.get_chess_board()[pieces_position.y][pieces_position.x].piece = piece;
+	m_undo_moves.back().set_piece_promoted(piece);
 	m_pawn_promotion_pieces.fill(nullptr);
 
 	SoundPlayer::Play(ISXChess::SoundType::MOVE_PIECE);
 	CheckKingStatus();
-}
-
-sf::String Game::GetGameResults() const
-{
-	sf::String status_string;
-
-	if (m_status == Game::Status::BLACK_WIN)
-	{
-		status_string = "\t\t\tBlack wins!\n";
-	}
-	else if (m_status == Game::Status::WHITE_WIN)
-	{
-		status_string = "\t\t\tWhite wins!\n";
-	}
-	else if (m_status == Game::Status::STALEMATE)
-	{
-		status_string = "\t\t\t Stalemate!\n";
-	}
-	else if (m_status == Game::Status::DRAW)
-	{
-		status_string = "\t\t\t\tDraw!\n";
-	}
-
-	status_string += "Press R to restart the game";
-	return status_string;
-}
-
-void Game::CheckKingStatus()
-{
-	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::DANGER);
-
-	if (IsInCheck())
-	{
-		const Position king_position = m_board.FindKingPosition(m_current_turn);
-		m_board.get_chess_board().at(king_position.y).at(king_position.x).state = BoardSquare::State::DANGER;
-
-		SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
-	}
 }
 
 void Game::CheckSpecialMoves(const Move& move)
@@ -498,7 +498,7 @@ void Game::UndoSpecialMoves(const Move& move)
 
 	if (move_type == Move::Type::EN_PASSANT)
 	{
-		Position en_passant_square = m_played_moves.back().get_en_passant_position();
+		Position en_passant_square = m_undo_moves.back().get_en_passant_position();
 		m_board.get_chess_board()[en_passant_square.y][en_passant_square.x].en_passant_position = en_passant_square;
 		m_board.get_chess_board()[src.y][dest.x].piece = std::move(move.get_piece_defeated());
 	}
@@ -541,18 +541,32 @@ void Game::UndoSpecialMoves(const Move& move)
 	}
 }
 
-std::list<Move> Game::GeneratePossibleMoves()
+void Game::RedoSpecialMoves(const Move& move)
 {
-	const std::list<std::pair<std::shared_ptr<Piece>, Position>> pieces_positions = m_board.GetPiecesPositions(m_current_turn);
-	std::list<Move> moves{};
+	Position src = move.get_src_position(), dest = move.get_dest_position();
+	Move::Type move_type = move.get_type();
 
-	for (const auto& [piece, piece_position] : pieces_positions)
+	if (move_type == Move::Type::PAWN_PROMOTION)
 	{
-		moves.splice(moves.end(), piece->GeneratePossibleMoves(m_board.get_chess_board(), piece_position));
-	}
+		m_pawn_promotion_pieces.fill(nullptr);
 
-	RemoveMovesLeadingToCheck(moves);
-	return moves;
+		std::shared_ptr<Piece> piece_promoted = move.get_piece_promoted();
+		m_board.get_chess_board()[dest.y][dest.x].piece = piece_promoted;
+		m_undo_moves.back().set_piece_promoted(piece_promoted);
+	}
+}
+
+void Game::CheckKingStatus()
+{
+	ISXUtility::ClearSquaresStates(m_board.get_chess_board(), BoardSquare::State::DANGER);
+
+	if (IsInCheck())
+	{
+		const Position king_position = m_board.FindKingPosition(m_current_turn);
+		m_board.get_chess_board().at(king_position.y).at(king_position.x).state = BoardSquare::State::DANGER;
+
+		SoundPlayer::Play(ISXChess::SoundType::NOTIFICATION);
+	}
 }
 
 void Game::RemoveMovesLeadingToCheck(std::list<Move>& moves)
@@ -582,6 +596,45 @@ void Game::RemoveMovesLeadingToCheck(std::list<Move>& moves)
 		m_board.get_chess_board()[src.y][src.x].piece = std::move(m_board.get_chess_board()[dest.y][dest.x].piece);
 		m_board.get_chess_board()[dest.y][dest.x].piece = save_dest_piece;
 	}
+}
+
+sf::String Game::GetGameResults() const
+{
+	sf::String status_string;
+
+	if (m_status == Game::Status::BLACK_WIN)
+	{
+		status_string = "\t\t\tBlack wins!\n";
+	}
+	else if (m_status == Game::Status::WHITE_WIN)
+	{
+		status_string = "\t\t\tWhite wins!\n";
+	}
+	else if (m_status == Game::Status::STALEMATE)
+	{
+		status_string = "\t\t\t Stalemate!\n";
+	}
+	else if (m_status == Game::Status::DRAW)
+	{
+		status_string = "\t\t\t\tDraw!\n";
+	}
+
+	status_string += "Press R to restart the game";
+	return status_string;
+}
+
+std::list<Move> Game::GeneratePossibleMoves()
+{
+	const std::list<std::pair<std::shared_ptr<Piece>, Position>> pieces_positions = m_board.GetPiecesPositions(m_current_turn);
+	std::list<Move> moves{};
+
+	for (const auto& [piece, piece_position] : pieces_positions)
+	{
+		moves.splice(moves.end(), piece->GeneratePossibleMoves(m_board.get_chess_board(), piece_position));
+	}
+
+	RemoveMovesLeadingToCheck(moves);
+	return moves;
 }
 
 bool Game::CanMove()

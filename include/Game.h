@@ -32,22 +32,25 @@ public:
 	void Run();
 	void Reset(const PlayerArray* const players = nullptr);
 
-	void SwitchTurn();
 	bool MakeMove(Position src, Position dest);
 	void UndoMove();
+	void RedoMove();
+
+	void SwitchTurn();
 	bool IsGameOver();
 
 private:
 	void OnMouseClick(const sf::Vector2i& mouse_position);
 	void OnPawnPromotion(const sf::Vector2i& mouse_position);
 
-	sf::String GetGameResults() const;
-
-	void CheckKingStatus();
 	void CheckSpecialMoves(const Move& move);
 	void UndoSpecialMoves(const Move& move);
-	std::list<Move> GeneratePossibleMoves();
+	void RedoSpecialMoves(const Move& move);
+
+	void CheckKingStatus();
 	void RemoveMovesLeadingToCheck(std::list<Move>& moves);
+	sf::String GetGameResults() const;
+	std::list<Move> GeneratePossibleMoves();
 	bool CanMove();
 	bool IsInCheck() const;
 
@@ -56,8 +59,9 @@ private:
 
 	PlayerArray m_players;
 	ISXChess::Team m_current_turn;
-	std::list<Move> m_played_moves;
 	std::list<Move> m_possible_moves;
+	std::list<Move> m_undo_moves;
+	std::list<Move> m_redo_moves;
 	Status m_status;
 
 	Position m_selected_piece_position;

@@ -6,6 +6,7 @@ Move::Move(Position src, Position dest, Move::Type type, std::shared_ptr<Piece> 
     , m_type(type)
     , m_piece_moved(piece_moved)
     , m_piece_defeated(piece_defeated)
+    , m_piece_promoted(nullptr)
     , m_first_move(is_first_move)
     , m_en_passant_position(INVALID_POSITION)
     , m_halfmove_clock(0)
@@ -35,6 +36,16 @@ std::shared_ptr<Piece> Move::get_piece_moved() const
 std::shared_ptr<Piece> Move::get_piece_defeated() const
 {
     return this->m_piece_defeated;
+}
+
+std::shared_ptr<Piece> Move::get_piece_promoted() const
+{
+    return this->m_piece_promoted;
+}
+
+void Move::set_piece_promoted(std::shared_ptr<Piece> piece_promoted)
+{
+	this->m_piece_promoted = piece_promoted;
 }
 
 bool Move::is_first_move() const
