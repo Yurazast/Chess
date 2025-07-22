@@ -17,6 +17,14 @@ const sf::Color BOARD_SQUARE_MOVE_COLOR = {200, 255, 5, 100};
 const sf::Color BOARD_SQUARE_HIGHLIGHTED_COLOR = {95, 95, 195, 125};
 const sf::Color BOARD_SQUARE_SELECTED_COLOR = {60, 205, 70};
 
+namespace ISXChess
+{
+
+extern float g_board_square_size_x;
+extern float g_board_square_size_y;
+
+}
+
 struct BoardSquare
 {
     sf::Color init_color;

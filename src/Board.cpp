@@ -1,5 +1,13 @@
 #include "Board.h"
 
+namespace ISXChess
+{
+
+float g_board_square_size_x = BOARD_SQUARE_INIT_SIZE;
+float g_board_square_size_y = BOARD_SQUARE_INIT_SIZE;
+
+}
+
 Board::Board()
 	: m_chess_board{}
 {}
@@ -159,7 +167,7 @@ void Board::InitPieces(ISXChess::Team team)
 		std::shared_ptr<Piece> piece = m_chess_board.at(start_y).at(x).piece;
 
 		piece->get_sprite().setPosition(square.getPosition());
-		piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
+		piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 128, ISXChess::g_board_square_size_y / 128));
 	}
 
 	for (uint8_t x = 0; x < BOARD_WIDTH; ++x)
@@ -170,6 +178,6 @@ void Board::InitPieces(ISXChess::Team team)
 		std::shared_ptr<Piece> piece = m_chess_board.at(start_y + shift).at(x).piece;
 
 		piece->get_sprite().setPosition(square.getPosition());
-		piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
+		piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 128, ISXChess::g_board_square_size_y / 128));
 	}
 }

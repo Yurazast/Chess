@@ -9,7 +9,6 @@ include_directories(include)
 set(PROJECT_SOURCE_FILES
     src/Main.cpp
     src/Board.cpp
-    src/FENParser.cpp
     src/Game.cpp
     src/Move.cpp
     src/Position.cpp
@@ -22,7 +21,10 @@ set(PROJECT_SOURCE_FILES
     src/pieces/Queen.cpp
     src/pieces/King.cpp
     src/pieces/PieceFactory.cpp
+    src/parsers/ArgsParser.cpp
+    src/parsers/FENParser.cpp
     src/players/Player.cpp
+    src/utility/ArgsUtility.cpp
     src/utility/ChessBoardUtility.cpp
     src/utility/PositionUtility.cpp
     src/utility/SoundPlayerUtility.cpp

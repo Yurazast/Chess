@@ -1,4 +1,4 @@
-#include "FENParser.h"
+#include "parsers/FENParser.h"
 
 FENParser::FENParser(const std::string& fen)
 	: m_fen(fen)
@@ -19,7 +19,7 @@ FENInfo FENParser::Parse()
 
 	if (fen_stream.fail())
 	{
-		throw std::runtime_error("Bad FEN syntax");
+		throw std::runtime_error("Invalid FEN syntax");
 	}
 
 	m_fen_info = {};
@@ -95,7 +95,7 @@ void FENParser::ParseChessBoard(const std::string& fen_position)
 			std::shared_ptr<Piece> piece = m_fen_info.chess_board.at(y).at(x).piece;
 
 			piece->get_sprite().setPosition(square.getPosition());
-			piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
+			piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 128, ISXChess::g_board_square_size_y / 128));
 			++x;
 		}
 		else if (std::isupper(c))
@@ -106,7 +106,7 @@ void FENParser::ParseChessBoard(const std::string& fen_position)
 			std::shared_ptr<Piece> piece = m_fen_info.chess_board.at(y).at(x).piece;
 
 			piece->get_sprite().setPosition(square.getPosition());
-			piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
+			piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 128, ISXChess::g_board_square_size_y / 128));
 			++x;
 		}
 		else

@@ -66,8 +66,8 @@ void InitSquares(ISXChess::ChessBoard& chess_board)
 			sf::RectangleShape& square = chess_board.at(y).at(x).square;
 			sf::Color& init_color = chess_board.at(y).at(x).init_color;
 
-			square.setSize(sf::Vector2f(BOARD_SQUARE_INIT_SIZE, BOARD_SQUARE_INIT_SIZE));
-			square.setPosition(sf::Vector2f(x * BOARD_SQUARE_INIT_SIZE, y * BOARD_SQUARE_INIT_SIZE));
+			square.setSize(sf::Vector2f(ISXChess::g_board_square_size_x, ISXChess::g_board_square_size_y));
+			square.setPosition(sf::Vector2f(x * ISXChess::g_board_square_size_x, y * ISXChess::g_board_square_size_y));
 			init_color = (!(y % 2 == 0) != !(x % 2 == 0)) ? BOARD_SQUARE_BLACK_COLOR : BOARD_SQUARE_WHITE_COLOR;
 		}
 	}

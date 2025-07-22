@@ -1,13 +1,16 @@
 #include "Game.h"
+#include "ChessBoard.h"
 
-Game::Game(sf::RenderWindow& window, PlayerArray players)
-	: m_board{}
-	, m_window{ window }
+Game::Game(sf::RenderWindow& window, const std::string& fen, PlayerArray players)
+	: m_window{ window }
+	, m_board{}
+	, m_fen{ fen }
 	, m_players{ players }
+	, m_current_turn{ ISXChess::Team::WHITE }
+	, m_status{ Game::Status::ACTIVE }
 	, m_possible_moves{}
 	, m_undo_moves{}
 	, m_redo_moves{}
-	, m_status{ Game::Status::ACTIVE }
 	, m_selected_piece_position{ INVALID_POSITION }
 	, m_pawn_promotion_pieces{}
 	, m_halfmove_clock(0)
@@ -22,51 +25,14 @@ Game::Game(sf::RenderWindow& window, PlayerArray players)
 	{
 		throw std::runtime_error("The players are in same team");
 	}
-}
 
-void Game::Init(const std::string& fen)
-{
-	if (fen.empty())
-	{
-		m_board.Init();
-		m_current_turn = ISXChess::Team::WHITE;
-	}
-	else
-	{
-		FENParser fen_parser(fen);
-		FENInfo fen_info = fen_parser.Parse();
-
-		m_board.set_chess_board(fen_info.chess_board);
-		m_current_turn = fen_info.current_turn;
-
-		std::shared_ptr<King> white_king = m_board.GetKing(ISXChess::Team::WHITE);
-		std::shared_ptr<King> black_king = m_board.GetKing(ISXChess::Team::BLACK);
-
-		if (white_king == nullptr || black_king == nullptr)
-		{
-			throw std::runtime_error("No king(s) on the board");
-		}
-
-		white_king->set_king_side_castling(fen_info.castling_rights.white_king_side);
-		white_king->set_queen_side_castling(fen_info.castling_rights.white_queen_side);
-		black_king->set_king_side_castling(fen_info.castling_rights.black_king_side);
-		black_king->set_queen_side_castling(fen_info.castling_rights.black_queen_side);
-
-		if (!fen_info.en_passant_square.IsInvalid())
-		{
-			m_board.get_chess_board()[0][0].en_passant_position = fen_info.en_passant_square;
-		}
-
-		this->m_halfmove_clock = fen_info.halfmove_clock;
-		this->m_fullmove_counter = fen_info.fullmove_counter;
-
-		CheckKingStatus();
-	}
+	ISXChess::g_board_square_size_x = static_cast<float>(m_window.getSize().x) / BOARD_WIDTH;
+	ISXChess::g_board_square_size_y = static_cast<float>(m_window.getSize().y) / BOARD_HEIGHT;
 }
 
 void Game::Run()
 {
-	Init("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	Init();
 
 	sf::Text text;
 	sf::Font font;
@@ -74,7 +40,8 @@ void Game::Run()
 	font.loadFromFile(AMETHYSTA_REGULAR_FONT_FILEPATH);
 	text.setFont(font);
 	text.setFillColor(sf::Color::Blue);
-	text.setPosition(BOARD_SQUARE_INIT_SIZE * 1.43f, BOARD_SQUARE_INIT_SIZE * 3.5f);
+	text.setScale(sf::Vector2f(ISXChess::g_board_square_size_x / BOARD_SQUARE_INIT_SIZE, ISXChess::g_board_square_size_y / BOARD_SQUARE_INIT_SIZE));
+	text.setPosition(ISXChess::g_board_square_size_x * 1.5f, ISXChess::g_board_square_size_y * 3.5f);
 
 	while (m_window.isOpen())
 	{
@@ -89,8 +56,8 @@ void Game::Run()
 
 			if (event.type == sf::Event::Resized)
 			{
-				m_board_square_size_x = static_cast<float>(m_window.getSize().x) / BOARD_WIDTH;
-				m_board_square_size_y = static_cast<float>(m_window.getSize().y) / BOARD_HEIGHT;
+				ISXChess::g_board_square_size_x = static_cast<float>(m_window.getSize().x) / BOARD_WIDTH;
+				ISXChess::g_board_square_size_y = static_cast<float>(m_window.getSize().y) / BOARD_HEIGHT;
 			}
 
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::R)
@@ -147,13 +114,18 @@ void Game::Run()
 	}
 }
 
-void Game::Reset(const PlayerArray* const players)
+void Game::Reset(const std::string& fen, const PlayerArray* const players)
 {
 	m_board.Clear();
 	m_possible_moves.clear();
 	m_undo_moves.clear();
 	m_redo_moves.clear();
 	m_pawn_promotion_pieces.fill(nullptr);
+
+	if (!fen.empty())
+	{
+		m_fen = fen;
+	}
 
 	if (players)
 	{
@@ -341,10 +313,50 @@ bool Game::IsGameOver()
 	return false;
 }
 
+void Game::Init()
+{
+	if (m_fen.empty())
+	{
+		m_board.Init();
+		m_current_turn = ISXChess::Team::WHITE;
+	}
+	else
+	{
+		FENParser fen_parser(m_fen);
+		FENInfo fen_info = fen_parser.Parse();
+
+		m_board.set_chess_board(fen_info.chess_board);
+		m_current_turn = fen_info.current_turn;
+
+		std::shared_ptr<King> white_king = m_board.GetKing(ISXChess::Team::WHITE);
+		std::shared_ptr<King> black_king = m_board.GetKing(ISXChess::Team::BLACK);
+
+		if (white_king == nullptr || black_king == nullptr)
+		{
+			throw std::runtime_error("No king(s) on the board");
+		}
+
+		white_king->set_king_side_castling(fen_info.castling_rights.white_king_side);
+		white_king->set_queen_side_castling(fen_info.castling_rights.white_queen_side);
+		black_king->set_king_side_castling(fen_info.castling_rights.black_king_side);
+		black_king->set_queen_side_castling(fen_info.castling_rights.black_queen_side);
+
+		if (!fen_info.en_passant_square.IsInvalid())
+		{
+			m_board.get_chess_board()[0][0].en_passant_position = fen_info.en_passant_square;
+		}
+
+		this->m_halfmove_clock = fen_info.halfmove_clock;
+		this->m_fullmove_counter = fen_info.fullmove_counter;
+
+		CheckKingStatus();
+	}
+}
+
 void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 {
-	int8_t board_square_x = static_cast<int8_t>((mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x);
-	int8_t board_square_y = static_cast<int8_t>((mouse_position.y - (m_window.getSize().y - m_board_square_size_y * BOARD_WIDTH) / 2) / m_board_square_size_y);
+	int8_t board_square_x = static_cast<int8_t>((mouse_position.x - (m_window.getSize().x - ISXChess::g_board_square_size_x * BOARD_WIDTH) / 2) / ISXChess::g_board_square_size_x);
+	int8_t board_square_y = static_cast<int8_t>((mouse_position.y - (m_window.getSize().y - ISXChess::g_board_square_size_y * BOARD_HEIGHT) / 2) / ISXChess::g_board_square_size_y);
 	Position board_square_position{ board_square_x, board_square_y };
 
 	if (!ISXUtility::IsValidBorders(board_square_position))
@@ -387,12 +399,12 @@ void Game::OnMouseClick(const sf::Vector2i& mouse_position)
 
 void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 {
-	float board_square_x = (mouse_position.x - (m_window.getSize().x - m_board_square_size_x * BOARD_HEIGHT) / 2) / m_board_square_size_x;
-	float board_square_y = (mouse_position.y - (m_window.getSize().y - m_board_square_size_y * BOARD_WIDTH) / 2) / m_board_square_size_y;
+	float board_square_x = (mouse_position.x - (m_window.getSize().x - ISXChess::g_board_square_size_x * BOARD_WIDTH) / 2) / ISXChess::g_board_square_size_x;
+	float board_square_y = (mouse_position.y - (m_window.getSize().y - ISXChess::g_board_square_size_y * BOARD_HEIGHT) / 2) / ISXChess::g_board_square_size_y;
 	Position board_square_position{ static_cast<int8_t>(board_square_x), static_cast<int8_t>(board_square_y) };
 
 	sf::Vector2f pieces_pos = m_pawn_promotion_pieces.front()->get_sprite().getPosition();
-	Position pieces_position = { static_cast<int8_t>(pieces_pos.x / BOARD_SQUARE_INIT_SIZE), static_cast<int8_t>(pieces_pos.y / BOARD_SQUARE_INIT_SIZE) };
+	Position pieces_position = { static_cast<int8_t>(pieces_pos.x / ISXChess::g_board_square_size_x), static_cast<int8_t>(pieces_pos.y / ISXChess::g_board_square_size_y) };
 
 	if (board_square_position != pieces_position)
 	{
@@ -410,7 +422,7 @@ void Game::OnPawnPromotion(const sf::Vector2i& mouse_position)
 	std::shared_ptr<Piece> piece = m_pawn_promotion_pieces.at(figure_x + figure_y * PAWN_PROMOTION_PIECES_COUNT / 2);
 
 	piece->get_sprite().setPosition(pieces_pos);
-	piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 128, BOARD_SQUARE_INIT_SIZE / 128));
+	piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 128, ISXChess::g_board_square_size_y / 128));
 
 	m_board.get_chess_board()[pieces_position.y][pieces_position.x].piece = piece;
 	m_undo_moves.back().set_piece_promoted(piece);
@@ -484,8 +496,8 @@ void Game::CheckSpecialMoves(const Move& move)
 
 		for (std::shared_ptr<Piece> piece : m_pawn_promotion_pieces)
 		{
-			piece->get_sprite().setPosition(square_pos.x + (i & 1) * BOARD_SQUARE_INIT_SIZE / 2, square_pos.y + (i & 2) * BOARD_SQUARE_INIT_SIZE / 4);
-			piece->get_sprite().setScale(sf::Vector2f(BOARD_SQUARE_INIT_SIZE / 2 / 128, BOARD_SQUARE_INIT_SIZE / 2 / 128));
+			piece->get_sprite().setPosition(square_pos.x + (i & 1) * ISXChess::g_board_square_size_x / 2, square_pos.y + (i & 2) * ISXChess::g_board_square_size_y / 4);
+			piece->get_sprite().setScale(sf::Vector2f(ISXChess::g_board_square_size_x / 2 / 128, ISXChess::g_board_square_size_y / 2 / 128));
 			++i;
 		}
 	}
