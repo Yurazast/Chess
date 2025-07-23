@@ -11,8 +11,8 @@
 struct ArgsInfo
 {
 	std::string fen;
-	float window_width;
-	float window_height;
+	unsigned int window_width;
+	unsigned int window_height;
 	bool fullscreen;
 };
 
