@@ -11,7 +11,16 @@ env:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cpu: x86_64
+          - os: ubuntu-22.04-arm
+            cpu: arm64
 
     steps:
     - uses: actions/checkout@v4
@@ -25,9 +34,9 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Copy resources and libraries to executable
+    - name: Copy dynamic libraries to executable (x86_64 CPU)
+      if: matrix.cpu == 'x86_64'
       run: |
-        cp -r ${{github.workspace}}/resources ${{github.workspace}}/build
         cp /usr/lib/x86_64-linux-gnu/libsfml-{audio,graphics,system,window}.so* ${{github.workspace}}/build
         cp /usr/lib/x86_64-linux-gnu/libfreetype*.so* ${{github.workspace}}/build
         cp /usr/lib/x86_64-linux-gnu/libpng*.so* ${{github.workspace}}/build
@@ -36,15 +45,25 @@ jobs:
         cp /usr/lib/x86_64-linux-gnu/libFLAC*.so* ${{github.workspace}}/build
         cp /usr/lib/x86_64-linux-gnu/libstb*.so* ${{github.workspace}}/build
 
+    - name: Copy dynamic libraries to executable (arm64 CPU)
+      if: matrix.cpu == 'arm64'
+      run: |
+        cp /usr/lib/aarch64-linux-gnu/libsfml-{audio,graphics,system,window}.so* ${{github.workspace}}/build
+        cp /usr/lib/aarch64-linux-gnu/libfreetype*.so* ${{github.workspace}}/build
+        cp /usr/lib/aarch64-linux-gnu/libpng*.so* ${{github.workspace}}/build
+        cp /usr/lib/aarch64-linux-gnu/libvorbis*.so* ${{github.workspace}}/build
+        cp /usr/lib/aarch64-linux-gnu/libogg*.so* ${{github.workspace}}/build
+        cp /usr/lib/aarch64-linux-gnu/libFLAC*.so* ${{github.workspace}}/build
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: chess-linux
+        name: chess-linux-${{matrix.cpu}}
         path: |
           build/Chess
           build/resources/
           build/lib*.so*
-  
+
   build-windows:
     runs-on: windows-latest
 
@@ -58,26 +77,36 @@ jobs:
 
     - name: Install dependencies
       run: |
-        git clone https://github.com/Microsoft/vcpkg.git ${{github.workspace}}\vcpkg --depth 1
-        ${{github.workspace}}\vcpkg\bootstrap-vcpkg.bat -disableMetrics
-        ${{github.workspace}}\vcpkg\vcpkg integrate install
-        ${{github.workspace}}\vcpkg\vcpkg install sfml:x64-windows
+        curl -LO https://github.com/SFML/SFML/releases/download/2.6.2/SFML-2.6.2-windows-vc17-64-bit.zip
+        7z x SFML-2.6.2-windows-vc17-64-bit.zip
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}\vcpkg\scripts\buildsystems\vcpkg.cmake
+      run: >-
+        cmake -B ${{github.workspace}}\build
+        -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$<1:${{github.workspace}}\build>"
+        -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$<1:${{github.workspace}}\build>"
+        -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$<1:${{github.workspace}}\build>"
+        -DCMAKE_PREFIX_PATH=${{github.workspace}}\SFML-2.6.2\lib\cmake\SFML
 
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
 
-    - name: Copy resources to executable
-      run: xcopy /s /i ${{github.workspace}}\resources ${{github.workspace}}\build\${{env.BUILD_TYPE}}\resources
+    - name: Copy dynamic libraries to executable
+      run: |
+        xcopy ${{github.workspace}}\SFML-2.6.2\bin\openal32.dll ${{github.workspace}}\build\
+        xcopy ${{github.workspace}}\SFML-2.6.2\bin\sfml-audio-2.dll ${{github.workspace}}\build\
+        xcopy ${{github.workspace}}\SFML-2.6.2\bin\sfml-graphics-2.dll ${{github.workspace}}\build\
+        xcopy ${{github.workspace}}\SFML-2.6.2\bin\sfml-system-2.dll ${{github.workspace}}\build\
+        xcopy ${{github.workspace}}\SFML-2.6.2\bin\sfml-window-2.dll ${{github.workspace}}\build\
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: chess-windows
+        name: chess-windows-x86_64
         path: |
-          build\${{env.BUILD_TYPE}}
+          build/Chess.exe
+          build/resources/
+          build/*.dll
 
   build-macos:
     runs-on: ${{matrix.os}}
@@ -87,15 +116,15 @@ jobs:
       matrix:
         include:
           - os: macos-13
-            cpu: intel
+            cpu: x86_64
           - os: macos-latest
-            cpu: amd
+            cpu: arm64
 
     steps:
     - uses: actions/checkout@v4
   
     - name: Install dependencies
-      run: brew install sfml
+      run: brew install sfml@2 && brew link sfml@2
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -103,10 +132,9 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Copy resources and libraries to executable (Intel CPU)
-      if: matrix.cpu == 'intel'
+    - name: Copy dynamic libraries to executable (x86_64 CPU)
+      if: matrix.cpu == 'x86_64'
       run: |
-        cp -r ${{github.workspace}}/resources ${{github.workspace}}/build
         cp /usr/local/lib/libsfml-{audio,graphics,system,window}*.dylib ${{github.workspace}}/build
         cp /usr/local/lib/libfreetype*.dylib ${{github.workspace}}/build
         cp /usr/local/lib/libpng*.dylib ${{github.workspace}}/build
@@ -114,11 +142,10 @@ jobs:
         cp /usr/local/lib/libogg*.dylib ${{github.workspace}}/build
         cp /usr/local/lib/libFLAC*.dylib ${{github.workspace}}/build
 
-    - name: Copy resources and libraries to executable (AMD CPU)
-      if: matrix.cpu == 'amd'
+    - name: Copy dynamic libraries to executable (arm64 CPU)
+      if: matrix.cpu == 'arm64'
       run: |
-        cp -r ${{github.workspace}}/resources ${{github.workspace}}/build
-        cp /opt/homebrew/Cellar/sfml/*/lib/libsfml-{audio,graphics,system,window}*.dylib ${{github.workspace}}/build
+        cp /opt/homebrew/Cellar/sfml@2/*/lib/libsfml-{audio,graphics,system,window}*.dylib ${{github.workspace}}/build
         cp /opt/homebrew/Cellar/freetype/*/lib/libfreetype*.dylib ${{github.workspace}}/build
         cp /opt/homebrew/Cellar/libpng/*/lib/libpng*.dylib ${{github.workspace}}/build
         cp /opt/homebrew/Cellar/libvorbis/*/lib/libvorbis*.dylib ${{github.workspace}}/build

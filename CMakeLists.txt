@@ -31,5 +31,7 @@ set(PROJECT_SOURCE_FILES
     src/utility/TeamUtility.cpp
 )
 
+file(COPY ${CMAKE_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCE_FILES})
 target_link_libraries(${CMAKE_PROJECT_NAME} sfml-system sfml-window sfml-graphics sfml-audio)
